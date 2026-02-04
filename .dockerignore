@@ -1,0 +1,13 @@
+__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.venv
+venv
+.env
+artifacts
+data
+logs
+docs_build_walkthrough.md
+docs_interview_questions.md
+plan.md

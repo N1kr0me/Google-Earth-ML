@@ -1,0 +1,7 @@
+image_size: 64
+batch_size: 16
+epochs: 5
+learning_rate: 0.001
+num_classes: 2
+artifact_path: artifacts/model_v1/model.pt
+device: cpu

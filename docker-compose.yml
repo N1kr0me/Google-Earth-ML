@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:15
+    container_name: geeflood_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-geeflood}
+      POSTGRES_USER: ${DB_USER:-geeflood_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: geeflood_api
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-geeflood}
+      DB_USER: ${DB_USER:-geeflood_user}
+      DB_PASSWORD: ${DB_PASSWORD:-change_me}
+      MODEL_ARTIFACT_PATH: ${MODEL_ARTIFACT_PATH:-artifacts/model_v1/model.pt}
+      MODEL_VERSION: ${MODEL_VERSION:-v1}
+      MAX_IMAGE_BYTES: ${MAX_IMAGE_BYTES:-3145728}
+      ALLOWED_IMAGE_TYPES: ${ALLOWED_IMAGE_TYPES:-image/jpeg,image/png}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  pg_data:
