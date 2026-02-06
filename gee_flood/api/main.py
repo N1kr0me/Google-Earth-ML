@@ -100,7 +100,11 @@ def health() -> HealthResponse:
 @app.post("/predict_tile", response_model=PredictionResponse)
 @limiter.limit("10/minute")
 def predict_tile(request: TilePredictRequest) -> PredictionResponse:
-    result = predict_by_tile_id(request.tile_id)
+    try:
+        result = predict_by_tile_id(request.tile_id)
+    except ValueError:
+        # Security: avoid leaking internal DB details in error responses.
+        raise HTTPException(status_code=404, detail="Tile not found")
     return PredictionResponse(**result, tile_id=request.tile_id)
 
 
