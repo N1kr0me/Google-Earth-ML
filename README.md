@@ -36,6 +36,13 @@ Create a local `.env` file from the template:
 copy .env.example .env
 ```
 
+## Local Auth Setup
+
+1. Keep credentials only in local files (`.env` and `../keyfile/README.md` notes).
+2. Use your own Postgres credentials in `.env` (never commit real secrets).
+3. Authenticate Earth Engine locally from your account when running export scripts.
+4. `keyfile/` is local-only and should not be pushed to GitHub.
+
 ### Start Postgres + API (Docker)
 
 ```bash
@@ -61,6 +68,47 @@ docker compose up --build
 ```bash
 python -m gee_flood.model.train --config config\train_config.yaml
 ```
+
+## End-to-end local run order
+
+1. Start Postgres (`docker compose up -d db`).
+2. Initialize schema:
+
+```bash
+python scripts\init_db.py
+```
+
+3. Export metadata + local tile placeholders:
+
+```bash
+python scripts\gee_export_example.py
+```
+
+4. Ingest metadata into Postgres:
+
+```bash
+python scripts\ingest_tiles_example.py
+```
+
+5. Train model:
+
+```bash
+python -m gee_flood.model.train --config config\train_config.yaml
+```
+
+If Postgres is not ready yet, run a local smoke artifact build with synthetic data:
+
+```bash
+python -m gee_flood.model.train --config config\train_config.yaml --synthetic
+```
+
+6. Run API:
+
+```bash
+uvicorn gee_flood.api.main:app --host 0.0.0.0 --port 8000
+```
+
+If GEE auth is not configured yet, `scripts\gee_export_example.py` falls back to synthetic sample metadata so you can still run the MVP pipeline locally.
 
 ## How to run the API locally (after training)
 

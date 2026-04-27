@@ -49,6 +49,20 @@ class TileDataset(Dataset):
         return x, y
 
 
+class SyntheticTileDataset(Dataset):
+    def __init__(self, size: int, image_size: int):
+        self.size = size
+        self.image_size = image_size
+
+    def __len__(self) -> int:
+        return self.size
+
+    def __getitem__(self, idx: int):
+        x = torch.rand(3, self.image_size, self.image_size, dtype=torch.float32)
+        y = torch.tensor(idx % 2, dtype=torch.long)
+        return x, y
+
+
 def _load_config(path: str) -> TrainConfig:
     with open(path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
@@ -99,22 +113,27 @@ def _evaluate(model, loader, device: str):
     }
 
 
-def train(config_path: str) -> None:
+def train(config_path: str, synthetic: bool = False) -> None:
     cfg = _load_config(config_path)
     device = torch.device(cfg.device if torch.cuda.is_available() else "cpu")
 
-    assign_splits()
-    train_tiles = get_tiles_by_split("train")
-    val_tiles = get_tiles_by_split("val")
-    test_tiles = get_tiles_by_split("test")
+    if synthetic:
+        train_ds = SyntheticTileDataset(size=64, image_size=cfg.image_size)
+        val_ds = SyntheticTileDataset(size=16, image_size=cfg.image_size)
+        test_ds = SyntheticTileDataset(size=16, image_size=cfg.image_size)
+    else:
+        assign_splits()
+        train_tiles = get_tiles_by_split("train")
+        val_tiles = get_tiles_by_split("val")
+        test_tiles = get_tiles_by_split("test")
 
-    if not train_tiles:
-        raise RuntimeError("No tiles found. Ingest data before training.")
+        if not train_tiles:
+            raise RuntimeError("No tiles found. Ingest data before training.")
 
-    max_bytes = int(os.getenv("MAX_IMAGE_BYTES", "3145728"))
-    train_ds = TileDataset(train_tiles, cfg.image_size, max_bytes=max_bytes)
-    val_ds = TileDataset(val_tiles, cfg.image_size, max_bytes=max_bytes)
-    test_ds = TileDataset(test_tiles, cfg.image_size, max_bytes=max_bytes)
+        max_bytes = int(os.getenv("MAX_IMAGE_BYTES", "3145728"))
+        train_ds = TileDataset(train_tiles, cfg.image_size, max_bytes=max_bytes)
+        val_ds = TileDataset(val_tiles, cfg.image_size, max_bytes=max_bytes)
+        test_ds = TileDataset(test_tiles, cfg.image_size, max_bytes=max_bytes)
 
     train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=cfg.batch_size, shuffle=False)
@@ -169,5 +188,6 @@ def train(config_path: str) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="config/train_config.yaml")
+    parser.add_argument("--synthetic", action="store_true")
     args = parser.parse_args()
-    train(args.config)
+    train(args.config, synthetic=args.synthetic)

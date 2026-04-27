@@ -1,4 +1,10 @@
 import csv
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from gee_flood.data.tiles_repo import insert_tiles
 
@@ -26,7 +32,7 @@ def load_csv(path: str):
 if __name__ == "__main__":
     # TODO: Create a CSV from your GEE export metadata and run this script.
     # Why it matters: ingestion proves you can move data from GEE to Postgres.
-    csv_path = "data\\tile_metadata.csv"
+    csv_path = str(Path("data") / "tile_metadata.csv")
     tiles = load_csv(csv_path)
     count = insert_tiles(tiles)
     print(f"Inserted {count} tiles.")
